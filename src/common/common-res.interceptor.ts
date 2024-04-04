@@ -8,7 +8,7 @@ export class CommonResInterceptor implements NestInterceptor {
       map((data) => ({
         code: 200,
         message: 'success',
-        data,
+        data: data || {},
         success: true,
       })),
     );
