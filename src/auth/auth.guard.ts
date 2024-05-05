@@ -3,7 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { jwtConstants } from './constants';
 import { Request } from 'express';
 import { Reflector } from '@nestjs/core';
-import { IS_PUBLIC_KEY } from 'src/utils/public';
+import { IS_PUBLIC_KEY, SHOULD_ADD_USER_KEY } from 'src/utils/public';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -17,12 +17,23 @@ export class AuthGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
-    if (isPublic) {
+    const shouldAddUser = this.reflector.getAllAndOverride<boolean>(SHOULD_ADD_USER_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (isPublic && !shouldAddUser) {
       return true;
     }
+
     const request = context.switchToHttp().getRequest();
     const token = this.extractTokenFromHeader(request);
-    if (!token) {
+
+    // 如果是公共接口，并且需要添加用户信息，但是没有token，要么直接放行
+    if (isPublic && shouldAddUser) {
+      if (!token) {
+        return true;
+      }
+    } else if (!token) {
       throw new UnauthorizedException();
     }
     try {

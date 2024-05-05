@@ -6,8 +6,8 @@ import { User } from '../user/entities/user.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { md5 } from 'src/utils/auth';
-import { defaultAvatar } from './constants';
 import { loginUserVo } from './vo/login-user.vo';
+import { jwtConstants } from './constants';
 
 @Injectable()
 export class AuthService {
@@ -38,9 +38,13 @@ export class AuthService {
   }
 
   async register(registerDto: RegisterDto) {
-    const regExp = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,16}$/;
+    // const regExp = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,16}$/;
+    // if (!regExp.test(registerDto.username)) {
+    //   throw new HttpException('用户名必须包含字母和数字', HttpStatus.BAD_REQUEST);
+    // }
+    const regExp = /^[A-Za-z\d]{6,16}$/;
     if (!regExp.test(registerDto.username)) {
-      throw new HttpException('用户名必须包含字母和数字', HttpStatus.BAD_REQUEST);
+      throw new HttpException('用户名必须包含字母或数字', HttpStatus.BAD_REQUEST);
     }
     const foundUser = await this.userRepository.findOneBy({
       username: registerDto.username,
@@ -53,7 +57,7 @@ export class AuthService {
     newUser.password = md5(registerDto.password);
     newUser.nickname = registerDto.nickname;
     newUser.sex = registerDto.sex;
-    newUser.avatar = defaultAvatar;
+    newUser.avatar = null;
     try {
       await this.userRepository.save(newUser);
       return '注册成功';
@@ -61,5 +65,11 @@ export class AuthService {
       this.logger.error(e, AuthService);
       throw new HttpException('注册失败,请稍后再试', HttpStatus.INTERNAL_SERVER_ERROR);
     }
+  }
+
+  async validateToken(token: string) {
+    return await this.jwtService.verifyAsync(token, {
+      secret: jwtConstants.secret,
+    });
   }
 }
