@@ -54,6 +54,7 @@ export class WsService {
   }
   // 辅助函数，用于下方的发送私信使用
   async _checkChatList(from_id: number, to_id: number) {
+    console.log('from_id', from_id, 'to_id', to_id);
     let senderChatList = await this.chatListRepository.findOne({
       where: {
         from_user: {
@@ -128,6 +129,7 @@ export class WsService {
           createTime: newChatMessage.createTime,
         });
       } else {
+        senderChatList.unread = senderChatList.unread || 0;
         senderChatList.unread += 1; // TODO 待定,有Bug就改
       }
     }
